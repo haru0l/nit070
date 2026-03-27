@@ -1,0 +1,282 @@
+# HTS Training Configuration - NIT Defaults
+# Based on HTS-demo_NIT-SONG070-F001 Defaults
+# Generated for nitech_jp_song070 dataset
+
+# ========================================
+# Project Settings
+# ========================================
+project:
+  name: "HTS-demo_NIT-SONG070-F001"
+  version: "2.3"
+  dataset: "nitech_jp_song070"
+  speaker: "f001"
+  speaker_language: "Japanese"
+  
+# ========================================
+# Question Set and Versioning
+# ========================================
+questions:
+  set: "001"
+  version: "001"
+  fullcontext_format: "Question2012"
+  fullcontext_version: "2.3"
+
+# ========================================
+# Acoustic Feature Extraction Parameters
+# ========================================
+acoustic:
+  # Sampling and Frame Settings
+  sample_freq: 48000          # Sampling frequency (Hz)
+  frame_length: 1200          # Frame length (samples) = 25ms at 48kHz
+  frame_shift: 240            # Frame shift (samples) = 5ms at 48kHz
+  fft_length: 2048            # FFT length (samples)
+  
+  # Audio Processing
+  window_type: 1              # 0: Blackman, 1: Hamming, 2: Hanning
+  normalize: 1                # 0: none, 1: by power, 2: by magnitude
+  
+  # Spectral Analysis
+  frequency_warp: 0.55        # Frequency warping factor (α) for 48kHz
+  gamma: 0                    # 0: mel-cepstral, >0: mel-generalized cepstral
+  
+  # Feature Dimensions
+  mgc_order: 34               # MGC order (35 coefficients with c0)
+  bap_order: 24               # BAP order (25 coefficients with c0)
+  
+  # Log Gain
+  use_log_gain: true          # Use logarithmic gain instead of linear
+  
+  # F0 Extraction
+  lower_f0: 195               # Lower F0 limit (Hz)
+  upper_f0: 740               # Upper F0 limit (Hz)
+  
+  # STRAIGHT Analysis (optional)
+  use_straight: false         # Use STRAIGHT vocoder via pylstraight for superior BAP extraction
+                              # Install with: pip install pylstraight
+
+# ========================================
+# Model Structure
+# ========================================
+model:
+  num_states: 5               # Number of HMM states (excluding initial and final)
+  
+  # Component and Duration Sets
+  component_types: ['mgc', 'lf0', 'bap']  # Acoustic feature components
+  duration_types: ['dur']      # Duration model
+  
+  # Feature orders
+  orders:
+    mgc: 35                    # MGC order + 1
+    lf0: 1
+    bap: 25                    # BAP order + 1
+    dur: 5                     # Duration model states
+  
+  # Stream Boundaries
+  stream_boundaries:
+    mgc_start: 0
+    mgc_end: 34
+    lf0_start: 35
+    lf0_end: 35
+    bap_start: 36
+    bap_end: 60
+  
+  # Stream Weights
+  stream_weights:
+    mgc: 1.0
+    lf0: 1.0
+    bap: 1.0
+  
+  # Multi-Space Probability Distribution (MSD)
+  msd_info:
+    mgc: 0                    # 0: non-MSD
+    lf0: 1                    # 1: MSD (for F0)
+    bap: 0                    # 0: non-MSD
+
+# ========================================
+# Feature Windows
+# ========================================
+windows:
+  # Number of windows for each stream
+  num_windows:
+    mgc: 3                    # Typically 3 (current, delta, delta-delta)
+    lf0: 3
+    bap: 3
+  
+  # Window widths (sample period multipliers)
+  window_widths:
+    mgc: [0.5, 0.5, 0.5]     # Usually symmetric around current frame
+    lf0: [0.5, 0.5, 0.5]
+    bap: [0.5, 0.5, 0.5]
+  
+  # Transform Block Configuration
+  num_transform_blocks:
+    mgc: 2
+    lf0: 2
+    bap: 2
+  
+  # Transform Bandwidth
+  bandwidth:
+    mgc: 0.5
+    lf0: 0.5
+    bap: 0.5
+
+# ========================================
+# HMM Training Parameters
+# ========================================
+training:
+  # Variance Floors
+  variance_floors:
+    mgc: 0.01
+    lf0: 0.01
+    bap: 0.01
+    dur: 0.01
+  
+  # Minimum Likelihood Gain for Tree Clustering
+  threshold:
+    mgc: 000
+    lf0: 000
+    bap: 000
+    dur: 000
+  
+  # MDL Criterion for Tree Size Control
+  mdl_criterion:
+    mgc: 1.0
+    lf0: 1.0
+    bap: 1.0
+    dur: 1.0
+  
+  # Minimum Occupancy Counts
+  min_occupancy:
+    mgc: 10.0
+    lf0: 10.0
+    bap: 10.0
+    dur: 5.0
+  
+  # Stats Load Threshold
+  stats_threshold:
+    mgc: 000
+    lf0: 000
+    bap: 000
+    dur: 000
+  
+  # GV (Global Variance) Parameters
+  gv_threshold:
+    mgc: 000
+    lf0: 000
+    bap: 000
+  
+  gv_mdl_criterion:
+    mgc: 1.0
+    lf0: 1.0
+    bap: 1.0
+  
+  gv_stats_threshold:
+    mgc: 000
+    lf0: 000
+    bap: 000
+
+# ========================================
+# Postfiltering Parameters
+# ========================================
+postfilter:
+  # Postfilter factor for mel-cepstral form
+  factor_mcp: 1.4
+  
+  # Postfilter factor for LSP form
+  factor_lsp: 0.7
+  
+  # Impulse response length
+  impulse_length_mcp: 4096
+  impulse_length_lsp: 576
+  
+  # Modulation spectrum emphasis coefficient
+  modulation_spectrum_emphasis: 1.0
+
+# ========================================
+# Phoneme Settings
+# ========================================
+phonemes:
+  # Silent and pause phonemes
+  silent: ['sil']
+  pause: ['pau']
+  
+  # Number of phonemes (will be calculated from label files)
+  # num_phonemes: null
+
+# ========================================
+# Frequency Warping Mapping
+# ========================================
+frequency_warp_map:
+  8000: 0.31
+  10000: 0.35
+  12000: 0.37
+  16000: 0.42
+  22050: 0.45
+  32000: 0.45
+  44100: 0.53
+  48000: 0.55
+
+# ========================================
+# File I/O Settings
+# ========================================
+io:
+  # Raw audio format
+  raw_format: "int16"         # Assumed format for .raw files
+  
+  # Feature file encoding
+  feature_encoding: "float32" # Binary format for feature files
+  
+  # HTK compatibility
+  use_htk_header: true        # Add HTK headers to feature files
+  htk_parm_kind: 9            # HTK parameter kind (9 = USER)
+
+# ========================================
+# Directory Structure
+# ========================================
+directories:
+  raw: "data/raw"             # Raw audio files
+  labels:
+    full: "data/labels/full"  # Fullcontext labels
+    mono: "data/labels/mono"  # Monophone labels
+    gen: "data/labels/gen"    # Generated labels (unseen)
+  features:
+    mgc: "data/mgc"           # Mel-generalized cepstrum
+    lf0: "data/lf0"           # Log F0
+    bap: "data/bap"           # Band aperiodicity
+    cmp: "data/cmp"           # Composite features
+  lists: "data/lists"         # Model and file lists
+  scripts: "data/scripts"     # Utility scripts
+  questions: "data/questions" # Question set files
+  windows: "data/win"         # Window definition files
+
+# ========================================
+# Execution Flags
+# ========================================
+flags:
+  # Step 1: Label preparation
+  HMMSEQ: 1                   # HMM sequence construction
+  MKEMV: 1                    # Create dummy models
+  
+  # Step 2: Data preparation
+  FXTRACT: 1                  # Feature extraction
+  MMSEQ: 1                    # Master label file generation
+  HCMPV: 1                    # Composing training data
+  
+  # Step 3: Model training
+  IN_RE: 1                    # Re-estimation of all models
+  IN_UV: 1                    # Update variance parameters
+  IN_MC: 1                    # Model clustering
+  IN_MB: 1                    # Generate block files
+  IN_RS: 1                    # Use regression class trees
+  
+  # Step 4: Synthesis
+  GENVOICE: 1                 # Generate sample voice (if needed)
+
+# ========================================
+# Version Information
+# ========================================
+versions:
+  hts_version: "2.3"
+  hts_engine_version: "1.10"
+  sptk_version: "3.9"
+  hts_working_group: "http://hts.sp.nitech.ac.jp/"
