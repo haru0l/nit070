@@ -1,0 +1,103 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║         HTS YAML Configuration - Quick Start Guide                  ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+This directory contains executable scripts for managing and testing
+the YAML-based HTS configuration system.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Load Configuration (Display All Parameters)
+   ─────────────────────────────────────────────────────────────────
+   python3 run_load_config.py
+
+   Shows:
+   • Acoustic parameters (sample rate, frame info, feature orders)
+   • Model structure (HMM states, orders, stream weights)
+   • Training settings (iterations, variance floors)
+   • Parameter generation algorithm
+
+
+2. Validate Configuration
+   ─────────────────────────────────────────────────────────────────
+   python3 run_validate_config.py
+
+   Checks:
+   • Sample rate in valid range
+   • Frequency warp coefficient valid
+   • F0 min < F0 max
+   • Model orders consistent
+   • Stream weights valid
+   • Training parameters reasonable
+
+
+3. Extract Acoustic Features from Audio
+   ─────────────────────────────────────────────────────────────────
+   python3 run_extract_features.py <audio_file>
+
+   Example:
+   python3 run_extract_features.py ../../HTS-demo_NIT-SONG070-F001/data/raw/nitech_jp_song070_f001_003.wav
+
+   Extracts:
+   • MGC (Mel-Generalized Cepstrum) - spectral features
+   • F0 (Fundamental Frequency) - pitch contour
+   • BAP (Band Aperiodic Power) - aperiodic components
+
+
+4. Convert Configuration Format
+   ─────────────────────────────────────────────────────────────────
+   python3 run_convert_config.py <input> <output> --format <format>
+
+   Examples:
+   python3 run_convert_config.py config_nit_defaults.yaml config.pl --format perl
+   python3 run_convert_config.py config_nit_defaults.yaml config.py --format python
+
+
+5. Run All Tests
+   ─────────────────────────────────────────────────────────────────
+   python3 run_all_tests.py [audio_file]
+
+   Example (with feature extraction):
+   python3 run_all_tests.py ../../HTS-demo_NIT-SONG070-F001/data/raw/nitech_jp_song070_f001_003.wav
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TYPICAL WORKFLOW:
+
+  1. Validate setup:
+     python3 run_load_config.py && python3 run_validate_config.py
+
+  2. Extract features from NIT demo:
+     python3 run_extract_features.py ../../HTS-demo_NIT-SONG070-F001/data/raw/nitech_jp_song070_f001_003.wav
+
+  3. Run comprehensive tests:
+     python3 run_all_tests.py ../../HTS-demo_NIT-SONG070-F001/data/raw/nitech_jp_song070_f001_003.wav
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PREREQUISITES:
+
+  pip install numpy scipy pysptk pylstraight pyyaml
+
+  Check:
+  python3 check_dependencies.py
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FILES:
+
+  config_nit_defaults.yaml      - Main configuration (YAML format)
+  yaml_config_loader.py         - Configuration loader & validator
+  config_converter.py           - Format conversion utility
+  data_preparation.py           - Feature extraction
+  run_load_config.py            - Load & display config
+  run_validate_config.py        - Validate configuration
+  run_extract_features.py       - Extract acoustic features
+  run_convert_config.py         - Convert config formats
+  run_all_tests.py              - Run all tests
+
+
+See SCRIPTS_README.md for detailed documentation.

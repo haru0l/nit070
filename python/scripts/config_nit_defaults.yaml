@@ -98,30 +98,92 @@ model:
 windows:
   # Number of windows for each stream
   num_windows:
-    mgc: 3                    # Typically 3 (current, delta, delta-delta)
+    mgc: 3                    # Static, Delta, Delta-Delta
     lf0: 3
     bap: 3
   
-  # Window widths (sample period multipliers)
-  window_widths:
-    mgc: [0.5, 0.5, 0.5]     # Usually symmetric around current frame
-    lf0: [0.5, 0.5, 0.5]
-    bap: [0.5, 0.5, 0.5]
+  # Window coefficients for each stream
+  # Format: window_name: [[static], [delta], [delta-delta]]
+  mgc:
+    - [1.0]                   # Static (from mgc.win1)
+    - [-0.5, 0.0, 0.5]       # Delta (from mgc.win2)
+    - [1.0, -2.0, 1.0]       # Delta-Delta (from mgc.win3)
   
-  # Transform Block Configuration
+  lf0:
+    - [1.0]                   # Static (from lf0.win1)
+    - [-0.5, 0.0, 0.5]       # Delta (from lf0.win2)
+    - [1.0, -2.0, 1.0]       # Delta-Delta (from lf0.win3)
+  
+  bap:
+    - [1.0]                   # Static (default)
+    - [-0.5, 0.0, 0.5]       # Delta (default)
+    - [1.0, -2.0, 1.0]       # Delta-Delta (default)
+  
+  # Transform blocks for spectrum conversion
   num_transform_blocks:
-    mgc: 2
-    lf0: 2
-    bap: 2
+    mgc: 3                    # Number of blocks for MGC transforms
+    lf0: 1                    # Number of blocks for log F0 transforms
+    bap: 3                    # Number of blocks for BAP transforms
   
-  # Transform Bandwidth
+  # Bandwidth for transforms (dimension or frequency range)
   bandwidth:
-    mgc: 0.5
-    lf0: 0.5
-    bap: 0.5
+    mgc: 35                   # MGC bandwidth = MGCVSIZE (35)
+    lf0: 1                    # LF0 bandwidth
+    bap: 25                   # BAP bandwidth
 
 # ========================================
-# HMM Training Parameters
+# Model Training Settings
+# ========================================
+model_training:
+  # Embedded training iterations
+  niter: 5                    # Number of iterations of embedded training
+  
+  # Mixture weight settings
+  wfloor: 5000                # Mixture weight flooring scale
+  
+  # DAEM (Deterministic Annealing EM)
+  daem: 0                     # 0: off, 1: on
+  daem_niter: 10              # Number of DAEM-based embedded training iterations
+  daem_alpha: 1.0             # Schedule of updating temperature parameter
+  
+  # Duration constraints
+  maxdev: 10                  # Maximum duration scaling factor
+  mindur: 5                   # Minimum duration to be evaluated
+
+# ========================================
+# Parameter Generation Algorithm Settings
+# ========================================
+parameter_generation:
+  # PG Algorithm Type
+  pgtype: 0                   # 0: Cholesky, 1: MixHidden, 2: StateHidden
+  
+  # EM Algorithm Settings
+  maxemiter: 20               # Max EM iterations
+  emepsilon: 0.0001           # Convergence factor for EM iteration
+  
+  # Global Variance (GV) Settings
+  use_gv: 1                   # 0: off, 1: on
+  maxgviter: 50               # Maximum number of GV iterations
+  gvepsilon: 0.0001           # Convergence factor for GV iteration
+  mineucnorm: 0.01            # Minimum Euclid norm for GV iteration
+  
+  # Optimization Settings
+  stepinit: 1.0               # Initial step size
+  stepinc: 1.2                # Step size acceleration factor
+  stepdec: 0.5                # Step size deceleration factor
+  optkind: "NEWTON"           # STEEPEST, NEWTON, or LBFGS
+  
+  # HMM and GV Weights
+  hmmweight: 1.0              # Weight for HMM output probability
+  gvweight: 1.0               # Weight for GV output probability
+  
+  # Special Flags
+  nosilgv: 1                  # 0: off, 1: on (GV without silent/pause)
+  cdgv: 1                     # 0: off, 1: on (context-dependent GV)
+  use_mspf: 1                 # 0: off, 1: on (modulation spectrum postfilter)
+
+# ========================================
+# Acoustic Model Training Parameters
 # ========================================
 training:
   # Variance Floors

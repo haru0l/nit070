@@ -183,17 +183,19 @@ class DataPreparation:
         """Extract log F0 using pylstraight"""
         lf0_file = Path(self.config.lf0dir) / f"{base}.lf0"
         
+        if not HAS_PYLSTRAIGHT:
+            print(f"  ⊘ pylstraight not available. Install with: pip install pylstraight")
+            return
+        
         try:
-            # Frame shift in milliseconds for pylstraight
+            # Frame shift in milliseconds for pylstraight (5ms for 48kHz)
             frame_shift_ms = self.config.frameshift * 1000.0 / sr
             
-            # Use pylstraight's extract_f0 for F0 extraction (linear format)
+            # Use pylstraight's extract_f0 for F0 extraction
             f0 = pylstraight.extract_f0(
                 audio,
                 sr,
                 frame_shift=frame_shift_ms,
-                f0_range=(self.config.lowerf0, self.config.upperf0),
-                f0_format="linear",
             )
             
             # Convert to log F0 (unvoiced=0, voiced=log(f0))
@@ -201,9 +203,12 @@ class DataPreparation:
             voiced = f0 > 0
             lf0[voiced] = np.log(f0[voiced])
             
+            # Make output directory if needed
+            Path(self.config.lf0dir).mkdir(parents=True, exist_ok=True)
+            
             # Save as binary
             lf0.astype(np.float32).tofile(lf0_file)
-            print(f"  ✓ Extracted F0 to {lf0_file} ({len(lf0)} frames)")
+            print(f"  ✓ Extracted F0 to {lf0_file} ({len(lf0)} frames, voiced: {np.sum(voiced)}/{len(lf0)})")
             
         except Exception as e:
             print(f"  ✗ Failed to extract F0: {e}")
@@ -213,13 +218,19 @@ class DataPreparation:
         """Extract mel-cepstral coefficients using pysptk"""
         mgc_file = Path(self.config.mgcdir) / f"{base}.mgc"
         
+        if not HAS_PYSPTK:
+            print(f"  ⊘ pysptk not available. Install with: pip install pysptk")
+            return
+        
         try:
-            # Frame extraction
-            frames = pysptk.util.frame_by_frame(
-                audio,
-                self.config.framelen,
-                self.config.frameshift,
-            )
+            # Manual frame extraction
+            num_frames = (len(audio) - self.config.framelen) // self.config.frameshift + 1
+            frames = np.zeros((num_frames, self.config.framelen), dtype=np.float32)
+            
+            for i in range(num_frames):
+                start_idx = i * self.config.frameshift
+                end_idx = start_idx + self.config.framelen
+                frames[i, :] = audio[start_idx:end_idx]
             
             # Apply window
             if self.config.windowtype == 0:  # Blackman
@@ -240,7 +251,6 @@ class DataPreparation:
                 )
             
             # MGC extraction - extract MCEP for each frame
-            num_frames = windowed.shape[0]
             mgc = np.zeros((num_frames, self.config.mgcorder + 1), dtype=np.float64)
             
             for i, frame in enumerate(windowed):
@@ -249,11 +259,12 @@ class DataPreparation:
                     frame,
                     order=self.config.mgcorder,
                     alpha=self.config.freqwarp,
-                    eps=1.0e-8,
                     etype=0,
                     threshold=0.000001,
-                    itype=0,
                 )
+            
+            # Make output directory if needed
+            Path(self.config.mgcdir).mkdir(parents=True, exist_ok=True)
             
             # Save as binary
             mgc.astype(np.float32).tofile(mgc_file)
@@ -272,18 +283,19 @@ class DataPreparation:
             return
         
         try:
-            # Frame shift in milliseconds for pylstraight
+            # Frame shift in milliseconds for pylstraight (5ms for 48kHz)
             frame_shift_ms = self.config.frameshift * 1000.0 / sr
             
+            print(f"    Extracting F0... (this may take a minute)")
             # First extract F0 using pylstraight
             f0 = pylstraight.extract_f0(
                 audio,
                 sr,
                 frame_shift=frame_shift_ms,
-                f0_range=(self.config.lowerf0, self.config.upperf0),
-                f0_format="linear",
             )
+            print(f"    ✓ F0 extraction complete ({len(f0)} frames)")
             
+            print(f"    Extracting aperiodicity spectrum... (this may take a few minutes)")
             # Then extract aperiodicity using pylstraight.extract_ap
             # Returns shape (nframe, nfreq) with aperiodicity spectrum
             ap_spectrum = pylstraight.extract_ap(
@@ -291,8 +303,8 @@ class DataPreparation:
                 sr,
                 f0,
                 frame_shift=frame_shift_ms,
-                ap_format="a",  # aperiodicity (0=fully periodic, 1=fully aperiodic)
             )
+            print(f"    ✓ Aperiodicity extraction complete ({ap_spectrum.shape[0]} frames x {ap_spectrum.shape[1]} freq bins)")
             
             # Downsample aperiodicity spectrum to BAP order dimensions
             num_frames, num_freqs = ap_spectrum.shape
@@ -309,6 +321,9 @@ class DataPreparation:
                     # Linear interpolation
                     weight = idx - idx_low
                     bap[:, i] = (1 - weight) * ap_spectrum[:, idx_low] + weight * ap_spectrum[:, idx_high]
+            
+            # Make output directory if needed
+            Path(self.config.bapdir).mkdir(parents=True, exist_ok=True)
             
             # Save as binary
             bap.astype(np.float32).tofile(bap_file)
